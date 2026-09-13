@@ -217,6 +217,18 @@ impl Client {
         Ok(event)
     }
 
+    /// Exact bytes of the last received message. Read before progressing again.
+    /// Authentication replies may contain secrets; callers must keep them private.
+    pub fn received_message_bytes(&self) -> &[u8] {
+        self.receive_state.message_bytes()
+    }
+
+    /// Consumed complete-message bytes since the previous call. Includes literal
+    /// continuations handled internally, so external IO accounting remains exact.
+    pub fn take_consumed_input(&mut self) -> usize {
+        self.receive_state.take_consumed_input()
+    }
+
     pub fn set_authenticate_data(
         &mut self,
         authenticate_data: AuthenticateData<'static>,

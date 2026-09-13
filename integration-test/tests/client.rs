@@ -164,8 +164,9 @@ fn login_with_rejected_literal() {
 
 #[test]
 fn login_with_literal_and_unexpected_status() {
-    // According to the specification, OK and NO will not affect the literal
-    let unexpected_status_tests = [b"A1 OK ...\r\n", b"A1 NO ...\r\n"];
+    // Completion for another command must not affect this literal.
+    // A matching tagged NO ends the command (covered by runtime_io tests).
+    let unexpected_status_tests = [b"A2 OK ...\r\n", b"A2 NO ...\r\n"];
 
     for unexpected_status in unexpected_status_tests {
         let (rt, mut server, mut client) = TestSetup::default().setup_client();
