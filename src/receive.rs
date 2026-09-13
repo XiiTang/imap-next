@@ -16,6 +16,7 @@ pub struct ReceiveState {
     crlf_relaxed: bool,
     fragmentizer: Fragmentizer,
     message_has_invalid_line_ending: bool,
+    consumed_input: usize,
 }
 
 impl ReceiveState {
@@ -29,7 +30,16 @@ impl ReceiveState {
             crlf_relaxed,
             fragmentizer,
             message_has_invalid_line_ending: false,
+            consumed_input: 0,
         }
+    }
+
+    pub fn message_bytes(&self) -> &[u8] {
+        self.fragmentizer.message_bytes()
+    }
+
+    pub fn take_consumed_input(&mut self) -> usize {
+        std::mem::take(&mut self.consumed_input)
     }
 
     pub fn enqueue_input(&mut self, bytes: &[u8]) {
@@ -93,7 +103,9 @@ impl ReceiveState {
                             // The message is now complete and can be decoded
                             let result = match self.fragmentizer.decode_message(codec) {
                                 Ok(message) => {
-                                    Ok(ReceiveEvent::DecodingSuccess(message.into_static()))
+                                    let message = message.into_static();
+                                    self.consumed_input += self.fragmentizer.message_bytes().len();
+                                    Ok(ReceiveEvent::DecodingSuccess(message))
                                 }
                                 Err(DecodeMessageError::DecodingFailure(_)) => {
                                     let discarded_bytes =

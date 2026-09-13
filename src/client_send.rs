@@ -64,7 +64,8 @@ impl ClientSendState {
                     ..
                 }) = status
                 {
-                    if *kind == StatusKind::Bad && tag == &state.command.tag {
+                    if matches!(kind, StatusKind::No | StatusKind::Bad) && tag == &state.command.tag
+                    {
                         // Terminate command because literal was rejected
                         return Some(ClientSendTermination::LiteralRejected {
                             handle: state.handle,
