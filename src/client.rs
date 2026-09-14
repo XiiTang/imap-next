@@ -62,6 +62,7 @@ pub struct Client {
     send_state: ClientSendState,
     receive_state: ReceiveState,
     next_expected_message: NextExpectedMessage,
+    response_stream: Option<imap_codec::fragmentizer::StreamingResponseDecoder>,
 }
 
 impl Client {
@@ -85,6 +86,7 @@ impl Client {
             send_state,
             receive_state,
             next_expected_message,
+            response_stream: None,
         }
     }
 
@@ -142,13 +144,26 @@ impl Client {
                     }
                 }
                 NextExpectedMessage::Response(codec) => {
-                    let response = match self.receive_state.next::<ResponseCodec>(codec) {
-                        Ok(ReceiveEvent::DecodingSuccess(response)) => response,
-                        Ok(ReceiveEvent::LiteralAnnouncement { .. }) => {
-                            // The client must accept the literal in any case.
-                            continue;
+                    let response = if let Some(stream) = &mut self.response_stream {
+                        match stream
+                            .next()
+                            .map_err(|error| Interrupt::Error(Error::StreamingResponse { error }))?
+                        {
+                            Some(imap_codec::fragmentizer::StreamingResponseEvent::Complete {
+                                structure,
+                            }) => structure,
+                            Some(fragment) => return Ok(Some(Event::ResponseLiteral { fragment })),
+                            None => return Err(Interrupt::Io(crate::Io::NeedMoreInput)),
                         }
-                        Err(interrupt) => return Err(handle_receive_interrupt(interrupt)),
+                    } else {
+                        match self.receive_state.next::<ResponseCodec>(codec) {
+                            Ok(ReceiveEvent::DecodingSuccess(response)) => response,
+                            Ok(ReceiveEvent::LiteralAnnouncement { .. }) => {
+                                // The client must accept the literal in any case.
+                                continue;
+                            }
+                            Err(interrupt) => return Err(handle_receive_interrupt(interrupt)),
+                        }
                     };
 
                     match response {
@@ -220,18 +235,59 @@ impl Client {
     /// Exact bytes of the last received message. Read before progressing again.
     /// Authentication replies may contain secrets; callers must keep them private.
     pub fn received_message_bytes(&self) -> &[u8] {
-        self.receive_state.message_bytes()
+        if let Some(stream) = &self.response_stream {
+            stream.syntax_bytes()
+        } else {
+            self.receive_state.message_bytes()
+        }
     }
 
     /// Consumed complete-message bytes since the previous call. Includes literal
     /// continuations handled internally, so external IO accounting remains exact.
     /// Detach bytes belonging to a security layer enabled after the last response.
     pub fn take_unparsed_after_message(&mut self) -> Option<Vec<u8>> {
-        self.receive_state.take_unparsed_after_message()
+        if let Some(stream) = &mut self.response_stream {
+            stream.take_unparsed_after_message()
+        } else {
+            self.receive_state.take_unparsed_after_message()
+        }
     }
 
     pub fn take_consumed_input(&mut self) -> usize {
         self.receive_state.take_consumed_input()
+            + self
+                .response_stream
+                .as_mut()
+                .map_or(0, |s| s.take_consumed_input())
+    }
+
+    /// Enable literal streaming at a completely received response boundary.
+    /// Existing trailing bytes are moved to the streaming decoder without loss.
+    /// Literal markers in subsequent response structures must be resolved using
+    /// `received_literal_descriptors` and the codec's `literal_reference` helper.
+    pub fn enable_response_streaming(
+        &mut self,
+        maximum_syntax_bytes: usize,
+    ) -> Result<(), &'static str> {
+        if self.response_stream.is_some()
+            || !matches!(self.next_expected_message, NextExpectedMessage::Response(_))
+        {
+            return Err("Response streaming requires a new, authenticated response boundary");
+        }
+        let pending = self
+            .receive_state
+            .take_unparsed_after_message()
+            .ok_or("IMAP response is incomplete")?;
+        let mut stream =
+            imap_codec::fragmentizer::StreamingResponseDecoder::new(maximum_syntax_bytes);
+        stream
+            .enqueue_input(&pending)
+            .map_err(|_| "IMAP stream input exceeds its buffer")?;
+        self.response_stream = Some(stream);
+        Ok(())
+    }
+    pub fn received_literal_descriptors(&self) -> &[imap_codec::fragmentizer::LiteralDescriptor] {
+        self.response_stream.as_ref().map_or(&[], |s| s.literals())
     }
 
     pub fn set_authenticate_data(
@@ -259,7 +315,11 @@ impl State for Client {
     type Error = Error;
 
     fn enqueue_input(&mut self, bytes: &[u8]) {
-        self.receive_state.enqueue_input(bytes);
+        if let Some(stream) = &mut self.response_stream {
+            let _ = stream.enqueue_input(bytes);
+        } else {
+            self.receive_state.enqueue_input(bytes);
+        }
     }
 
     fn next(&mut self) -> Result<Self::Event, Interrupt<Self::Error>> {
@@ -320,6 +380,10 @@ impl Handle for CommandHandle {
 
 #[derive(Debug)]
 pub enum Event {
+    /// Streamed literal fragment; complete response structures use ordinary response events.
+    ResponseLiteral {
+        fragment: imap_codec::fragmentizer::StreamingResponseEvent,
+    },
     /// [`Greeting`] received.
     GreetingReceived { greeting: Greeting<'static> },
     /// [`Command`] sent completely.
@@ -389,6 +453,10 @@ pub enum Event {
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("Response streaming failed: {error}")]
+    StreamingResponse {
+        error: imap_codec::fragmentizer::StreamingResponseError,
+    },
     #[error("Expected `\\r\\n`, got `\\n`")]
     ExpectedCrlfGotLf { discarded_bytes: Secret<Box<[u8]>> },
     #[error("Received malformed message")]
