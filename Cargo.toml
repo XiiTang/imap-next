@@ -37,7 +37,7 @@ ext_utf8 = ["imap-codec/ext_utf8"]
 [dependencies]
 async-compression = { version = "0.4", optional = true, default-features = false, features = ["tokio", "deflate"] }
 bytes = { version = "1.11.0", optional = true }
-imap-codec = { git = "https://github.com/XiiTang/imap-codec", rev = "d9120695f10ea3f528084e9e94ec5a9b13bbeb05", default-features = false }
+imap-codec = { git = "https://github.com/XiiTang/imap-codec", rev = "b65b19dd784a014f53f5db000acc3336e7ca97b6", default-features = false }
 thiserror = "2.0.17"
 tokio = { version = "1.48.0", optional = true, features = ["io-util", "macros", "net"] }
 tokio-rustls = { version = "0.26.4", optional = true, default-features = false }
