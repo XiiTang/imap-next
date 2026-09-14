@@ -225,6 +225,11 @@ impl Client {
 
     /// Consumed complete-message bytes since the previous call. Includes literal
     /// continuations handled internally, so external IO accounting remains exact.
+    /// Detach bytes belonging to a security layer enabled after the last response.
+    pub fn take_unparsed_after_message(&mut self) -> Option<Vec<u8>> {
+        self.receive_state.take_unparsed_after_message()
+    }
+
     pub fn take_consumed_input(&mut self) -> usize {
         self.receive_state.take_consumed_input()
     }

@@ -38,6 +38,10 @@ impl ReceiveState {
         self.fragmentizer.message_bytes()
     }
 
+    pub fn take_unparsed_after_message(&mut self) -> Option<Vec<u8>> {
+        self.fragmentizer.take_unparsed_after_message()
+    }
+
     pub fn take_consumed_input(&mut self) -> usize {
         std::mem::take(&mut self.consumed_input)
     }

@@ -232,7 +232,20 @@ dependencies = [
  "abnf-core",
  "base64",
  "chrono",
- "imap-types",
+ "imap-types 2.0.0-alpha.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log",
+ "nom",
+]
+
+[[package]]
+name = "imap-codec"
+version = "2.0.0-alpha.9"
+source = "git+https://github.com/XiiTang/imap-codec?rev=e90062745def516d416baa6230bbb6df072b5e26#e90062745def516d416baa6230bbb6df072b5e26"
+dependencies = [
+ "abnf-core",
+ "base64",
+ "chrono",
+ "imap-types 2.0.0-alpha.7 (git+https://github.com/XiiTang/imap-codec?rev=e90062745def516d416baa6230bbb6df072b5e26)",
  "log",
  "nom",
 ]
@@ -242,7 +255,7 @@ name = "imap-next"
 version = "0.3.4"
 dependencies = [
  "bytes",
- "imap-codec",
+ "imap-codec 2.0.0-alpha.9 (git+https://github.com/XiiTang/imap-codec?rev=e90062745def516d416baa6230bbb6df072b5e26)",
  "imap-next",
  "rand",
  "thiserror",
@@ -256,6 +269,18 @@ name = "imap-types"
 version = "2.0.0-alpha.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15aa08dfdb68ab0aa77bf3de6de5217bfcae4893f33573c8625be183fca621c8"
+dependencies = [
+ "base64",
+ "bounded-static",
+ "bounded-static-derive",
+ "chrono",
+ "thiserror",
+]
+
+[[package]]
+name = "imap-types"
+version = "2.0.0-alpha.7"
+source = "git+https://github.com/XiiTang/imap-codec?rev=e90062745def516d416baa6230bbb6df072b5e26#e90062745def516d416baa6230bbb6df072b5e26"
 dependencies = [
  "arbitrary",
  "base64",
@@ -285,7 +310,7 @@ version = "0.1.0"
 dependencies = [
  "bstr",
  "bytes",
- "imap-codec",
+ "imap-codec 2.0.0-alpha.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "imap-next",
  "lazy_static",
  "tokio",
