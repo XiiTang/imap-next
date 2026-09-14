@@ -236,7 +236,7 @@ impl Server {
                     })),
                 },
                 Ok(ReceiveEvent::LiteralAnnouncement { mode, length }) => {
-                    if length > self.options.max_literal_size {
+                    if length > u64::from(self.options.max_literal_size) {
                         match mode {
                             LiteralMode::Sync => {
                                 // Inform the client that the literal was rejected.
