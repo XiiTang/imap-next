@@ -101,6 +101,39 @@ impl Client {
         handle
     }
 
+    /// Start an incremental APPEND. The caller supplies chunks only after AppendReady.
+    pub fn enqueue_streamed_append(
+        &mut self,
+        spec: imap_codec::encode::StreamedAppend,
+    ) -> Result<CommandHandle, &'static str> {
+        let handle = self.handle_generator.generate();
+        self.send_state.enqueue_streamed_append(handle, spec)?;
+        Ok(handle)
+    }
+    /// Check a chunk without changing upload state or performing I/O.
+    pub fn check_append_chunk(
+        &self,
+        handle: CommandHandle,
+        bytes: &[u8],
+    ) -> Result<(), &'static str> {
+        self.send_state.check_append_chunk(handle, bytes)
+    }
+    /// Check whether explicit finish is currently valid, without changing state.
+    pub fn check_append_finish(&self, handle: CommandHandle) -> Result<(), &'static str> {
+        self.send_state.check_append_finish(handle)
+    }
+    /// Supply one bounded chunk. AppendChunkSent acknowledges local transport progress only.
+    pub fn append_chunk(
+        &mut self,
+        handle: CommandHandle,
+        bytes: Vec<u8>,
+    ) -> Result<(), &'static str> {
+        self.send_state.append_chunk(handle, bytes)
+    }
+    /// Explicitly terminate a completely supplied literal; no APPEND replay or implicit finish.
+    pub fn append_finish(&mut self, handle: CommandHandle) -> Result<(), &'static str> {
+        self.send_state.append_finish(handle)
+    }
     fn progress_send(&mut self) -> Result<Option<Event>, Interrupt<Error>> {
         // Abort if we didn't received the greeting yet
         if let NextExpectedMessage::Greeting(_) = &self.next_expected_message {
@@ -108,6 +141,15 @@ impl Client {
         }
 
         match self.send_state.next() {
+            Ok(Some(ClientSendEvent::AppendReady { handle })) => {
+                Ok(Some(Event::AppendReady { handle }))
+            }
+            Ok(Some(ClientSendEvent::AppendChunkSent { handle, written })) => {
+                Ok(Some(Event::AppendChunkSent { handle, written }))
+            }
+            Ok(Some(ClientSendEvent::AppendSent { handle })) => {
+                Ok(Some(Event::AppendSent { handle }))
+            }
             Ok(Some(ClientSendEvent::Command { handle, command })) => {
                 Ok(Some(Event::CommandSent { handle, command }))
             }
@@ -172,6 +214,9 @@ impl Client {
                                 self.send_state.maybe_terminate(&status)
                             {
                                 match finish_result {
+                                    ClientSendTermination::AppendTerminated { handle } => {
+                                        Event::AppendTerminated { handle, status }
+                                    }
                                     ClientSendTermination::LiteralRejected { handle, command } => {
                                         Event::CommandRejected {
                                             handle,
@@ -380,6 +425,17 @@ impl Handle for CommandHandle {
 
 #[derive(Debug)]
 pub enum Event {
+    /// The body literal may now be supplied, after any required continuation.
+    AppendReady { handle: CommandHandle },
+    /// A chunk has been written; this is not the server's APPEND result.
+    AppendChunkSent { handle: CommandHandle, written: u64 },
+    /// All body bytes and the explicitly requested final CRLF were written.
+    AppendSent { handle: CommandHandle },
+    /// A tagged response interrupted an unfinished APPEND. No more body bytes are sent.
+    AppendTerminated {
+        handle: CommandHandle,
+        status: Status<'static>,
+    },
     /// Streamed literal fragment; complete response structures use ordinary response events.
     ResponseLiteral {
         fragment: imap_codec::fragmentizer::StreamingResponseEvent,
