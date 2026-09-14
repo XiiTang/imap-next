@@ -98,6 +98,13 @@ impl ReceiveState {
                         self.message_has_invalid_line_ending = true;
                     }
 
+                    let announcement = if announcement.is_some()
+                        && self.fragmentizer.complete_if_decodable(codec)
+                    {
+                        None
+                    } else {
+                        announcement
+                    };
                     match announcement {
                         Some(LiteralAnnouncement { mode, length }) => {
                             // The line announces a literal, allow the caller to handle it

@@ -118,3 +118,13 @@ fn streamed_literals_are_incremental_and_preserve_response_state_and_accounting(
     assert_eq!(completed, 2);
     assert_eq!(consumed, wire.len());
 }
+
+#[test]
+fn text_ending_in_literal_syntax_does_not_consume_the_next_response() {
+    let mut client = client();
+    client.enqueue_input(b"* OK text {123}\r\nA1 OK done\r\n");
+    for raw in [b"* OK text {123}\r\n".as_slice(), b"A1 OK done\r\n"] {
+        assert!(matches!(client.next(), Ok(Event::StatusReceived { .. })));
+        assert_eq!(client.received_message_bytes(), raw);
+    }
+}

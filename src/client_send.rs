@@ -1,3 +1,5 @@
+mod append;
+use append::AppendState;
 use std::{collections::VecDeque, convert::Infallible};
 
 use imap_codec::{
@@ -47,15 +49,68 @@ impl ClientSendState {
 
     pub fn enqueue_command(&mut self, handle: CommandHandle, command: Command<'static>) {
         self.queued_messages
-            .push_back(QueuedMessage { handle, command });
+            .push_back(QueuedMessage::Command { handle, command });
     }
 
+    pub fn enqueue_streamed_append(
+        &mut self,
+        handle: CommandHandle,
+        spec: imap_codec::encode::StreamedAppend,
+    ) -> Result<(), &'static str> {
+        self.queued_messages
+            .push_back(QueuedMessage::Append(AppendState::new(handle, spec)?));
+        Ok(())
+    }
+    pub fn check_append_chunk(
+        &self,
+        handle: CommandHandle,
+        bytes: &[u8],
+    ) -> Result<(), &'static str> {
+        match &self.current_message {
+            Some(CurrentMessage::Append(state)) if state.handle == handle => {
+                state.check_chunk(bytes)
+            }
+            _ => Err("APPEND handle does not identify the active upload"),
+        }
+    }
+    pub fn check_append_finish(&self, handle: CommandHandle) -> Result<(), &'static str> {
+        match &self.current_message {
+            Some(CurrentMessage::Append(state)) if state.handle == handle => state.check_finish(),
+            _ => Err("APPEND handle does not identify the active upload"),
+        }
+    }
+    pub fn append_chunk(
+        &mut self,
+        handle: CommandHandle,
+        bytes: Vec<u8>,
+    ) -> Result<(), &'static str> {
+        match &mut self.current_message {
+            Some(CurrentMessage::Append(state)) if state.handle == handle => state.set_chunk(bytes),
+            _ => Err("APPEND handle does not identify the active upload"),
+        }
+    }
+    pub fn append_finish(&mut self, handle: CommandHandle) -> Result<(), &'static str> {
+        match &mut self.current_message {
+            Some(CurrentMessage::Append(state)) if state.handle == handle => state.finish(),
+            _ => Err("APPEND handle does not identify the active upload"),
+        }
+    }
     /// Terminates the current message depending on the received status.
     pub fn maybe_terminate(&mut self, status: &Status) -> Option<ClientSendTermination> {
         // TODO: Do we want more checks on the state? Was idle already accepted? Does the command even has a literal? etc.
         // If we reach one of the return statements, the current message will be removed
         let current_message = self.current_message.take()?;
         self.current_message = Some(match current_message {
+            CurrentMessage::Append(state) => {
+                if let Status::Tagged(tagged) = status {
+                    if tagged.tag == state.spec.tag {
+                        return Some(ClientSendTermination::AppendTerminated {
+                            handle: state.handle,
+                        });
+                    }
+                }
+                CurrentMessage::Append(state)
+            }
             CurrentMessage::Command(state) => {
                 // Check if status matches the current command
                 if let Status::Tagged(Tagged {
@@ -136,6 +191,9 @@ impl ClientSendState {
 
     /// Handles the received continuation request for a literal.
     pub fn literal_continue(&mut self) -> bool {
+        if let Some(CurrentMessage::Append(state)) = &mut self.current_message {
+            return state.continuation();
+        }
         // Check whether in correct state
         let Some(current_message) = self.current_message.take() else {
             return false;
@@ -330,16 +388,21 @@ impl ClientSendState {
 }
 
 /// Queued (and not sent yet) message.
-struct QueuedMessage {
-    handle: CommandHandle,
-    command: Command<'static>,
+enum QueuedMessage {
+    Command {
+        handle: CommandHandle,
+        command: Command<'static>,
+    },
+    Append(AppendState),
 }
 
 impl QueuedMessage {
     /// Start the sending process for this message.
     fn start(self, codec: &CommandCodec) -> CurrentMessage {
-        let handle = self.handle;
-        let command = self.command;
+        let (handle, command) = match self {
+            Self::Command { handle, command } => (handle, command),
+            Self::Append(state) => return CurrentMessage::Append(state),
+        };
         let mut fragments = codec.encode(&command);
         let tag = command.tag;
 
@@ -391,6 +454,7 @@ impl QueuedMessage {
 
 /// Currently being sent message.
 enum CurrentMessage {
+    Append(AppendState),
     /// Sending state of regular command.
     Command(CommandState),
     /// Sending state of authenticate command.
@@ -403,6 +467,7 @@ impl CurrentMessage {
     /// Pushes as many bytes as possible from the message to the buffer.
     fn push_to_buffer(self, write_buffer: &mut Vec<u8>) -> Self {
         match self {
+            Self::Append(state) => Self::Append(state.push_to_buffer(write_buffer)),
             Self::Command(state) => Self::Command(state.push_to_buffer(write_buffer)),
             Self::Authenticate(state) => Self::Authenticate(state.push_to_buffer(write_buffer)),
             Self::Idle(state) => Self::Idle(state.push_to_buffer(write_buffer)),
@@ -412,6 +477,7 @@ impl CurrentMessage {
     /// Updates the state after all bytes were sent.
     fn finish_sending(self) -> FinishSendingResult<Self> {
         match self {
+            Self::Append(state) => state.finish_sending().map_state(Self::Append),
             Self::Command(state) => state.finish_sending().map_state(Self::Command),
             Self::Authenticate(state) => state.finish_sending().map_state(Self::Authenticate),
             Self::Idle(state) => state.finish_sending().map_state(Self::Idle),
@@ -682,6 +748,16 @@ enum IdleActivity {
 
 /// Message sent.
 pub enum ClientSendEvent {
+    AppendReady {
+        handle: CommandHandle,
+    },
+    AppendChunkSent {
+        handle: CommandHandle,
+        written: u64,
+    },
+    AppendSent {
+        handle: CommandHandle,
+    },
     Command {
         handle: CommandHandle,
         command: Command<'static>,
@@ -699,6 +775,9 @@ pub enum ClientSendEvent {
 
 /// Message was terminated via [`ClientSendState::maybe_terminate`].
 pub enum ClientSendTermination {
+    AppendTerminated {
+        handle: CommandHandle,
+    },
     /// Command was terminated because its literal was rejected by the server.
     LiteralRejected {
         handle: CommandHandle,
@@ -715,5 +794,7 @@ pub enum ClientSendTermination {
         command_authenticate: CommandAuthenticate,
     },
     /// Idle command was rejected.
-    IdleRejected { handle: CommandHandle },
+    IdleRejected {
+        handle: CommandHandle,
+    },
 }
