@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "compress")]
+pub mod compress;
 pub mod client;
 mod client_send;
 mod fragment;
