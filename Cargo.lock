@@ -418,12 +418,12 @@ dependencies = [
 [[package]]
 name = "imap-codec"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/XiiTang/imap-codec?rev=2afb8ed14c7821f16762b89d8b14d0306d7982bf#2afb8ed14c7821f16762b89d8b14d0306d7982bf"
+source = "git+https://github.com/XiiTang/imap-codec?rev=2b684e3c67496e3d4e964690e086f93c151b5f27#2b684e3c67496e3d4e964690e086f93c151b5f27"
 dependencies = [
  "abnf-core",
  "base64",
  "chrono",
- "imap-types 2.0.0-alpha.7 (git+https://github.com/XiiTang/imap-codec?rev=2afb8ed14c7821f16762b89d8b14d0306d7982bf)",
+ "imap-types 2.0.0-alpha.7 (git+https://github.com/XiiTang/imap-codec?rev=2b684e3c67496e3d4e964690e086f93c151b5f27)",
  "log",
  "nom",
 ]
@@ -434,7 +434,7 @@ version = "0.3.4"
 dependencies = [
  "async-compression",
  "bytes",
- "imap-codec 2.0.0-alpha.9 (git+https://github.com/XiiTang/imap-codec?rev=2afb8ed14c7821f16762b89d8b14d0306d7982bf)",
+ "imap-codec 2.0.0-alpha.9 (git+https://github.com/XiiTang/imap-codec?rev=2b684e3c67496e3d4e964690e086f93c151b5f27)",
  "imap-next",
  "rand",
  "thiserror",
@@ -459,7 +459,7 @@ dependencies = [
 [[package]]
 name = "imap-types"
 version = "2.0.0-alpha.7"
-source = "git+https://github.com/XiiTang/imap-codec?rev=2afb8ed14c7821f16762b89d8b14d0306d7982bf#2afb8ed14c7821f16762b89d8b14d0306d7982bf"
+source = "git+https://github.com/XiiTang/imap-codec?rev=2b684e3c67496e3d4e964690e086f93c151b5f27#2b684e3c67496e3d4e964690e086f93c151b5f27"
 dependencies = [
  "arbitrary",
  "base64",
