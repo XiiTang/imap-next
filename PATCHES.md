@@ -15,3 +15,10 @@ Base: imap-next 0.3.4, commit
 The library continues to own command literals, AUTHENTICATE and IDLE state.
 Transport, native authentication, deadlines, resource budgets and public delivery
 remain responsibilities of the embedding application.
+
+## UTF-8 codec validation (2026-10-02)
+
+Align the engine dependency with the Boundless imap-codec SHA containing upstream
+#730. Keep one codec/types revision throughout the client and adapter; this changes
+no imap-next runtime code or public contract. Codec and downstream tests cover
+quoted UTF-8 validation and the existing session/literal/compression paths.
