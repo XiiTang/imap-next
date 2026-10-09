@@ -175,7 +175,7 @@ impl ReceiveState {
 
 pub enum ReceiveEvent<C: Decoder> {
     DecodingSuccess(C::Message<'static>),
-    LiteralAnnouncement { mode: LiteralMode, length: u64 },
+    LiteralAnnouncement { mode: LiteralMode, length: u32 },
 }
 
 pub enum ReceiveError {

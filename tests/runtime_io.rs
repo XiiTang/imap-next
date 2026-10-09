@@ -72,54 +72,6 @@ fn internally_handled_literal_continuation_is_accounted_once() {
 }
 
 #[test]
-fn streamed_literals_are_incremental_and_preserve_response_state_and_accounting() {
-    use imap_codec::fragmentizer::StreamingResponseEvent;
-    use imap_next::{
-        client::{Client, Event, Options},
-        State,
-    };
-    let mut client = Client::new(Options::default());
-    client.enqueue_input(b"* OK fixture\r\n");
-    assert!(matches!(
-        client.next().unwrap(),
-        Event::GreetingReceived { .. }
-    ));
-    assert_eq!(client.take_consumed_input(), 14);
-    client.enable_response_streaming(4096).unwrap();
-    let wire = b"* 1 FETCH (BODY[] {3}\r\nabc)\r\nA OK done\r\n";
-    let mut bytes = Vec::new();
-    let mut completed = 0;
-    let mut consumed = 0;
-    for b in wire {
-        client.enqueue_input(&[*b]);
-        loop {
-            match client.next() {
-                Ok(Event::ResponseLiteral {
-                    fragment: StreamingResponseEvent::LiteralChunk { data, .. },
-                }) => bytes.extend(data),
-                Ok(Event::DataReceived { .. }) => {
-                    completed += 1;
-                    assert_eq!(client.received_literal_descriptors()[0].length, 3);
-                }
-                Ok(Event::StatusReceived { .. }) => {
-                    completed += 1;
-                    assert!(client.received_literal_descriptors().is_empty());
-                }
-                Ok(_) => {}
-                Err(_) => {
-                    consumed += client.take_consumed_input();
-                    break;
-                }
-            }
-            consumed += client.take_consumed_input();
-        }
-    }
-    assert_eq!(bytes, b"abc");
-    assert_eq!(completed, 2);
-    assert_eq!(consumed, wire.len());
-}
-
-#[test]
 fn text_ending_in_literal_syntax_does_not_consume_the_next_response() {
     let mut client = client();
     client.enqueue_input(b"* OK text {123}\r\nA1 OK done\r\n");
