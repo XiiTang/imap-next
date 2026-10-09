@@ -404,26 +404,12 @@ dependencies = [
 [[package]]
 name = "imap-codec"
 version = "2.0.0-alpha.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d97d123085ef99031a01544307235eb189ecf23df66e37c41a046e3d6614b9f"
+source = "git+https://github.com/XiiTang/imap-codec?rev=47a85563b189018654f985e239d869062be5a396#47a85563b189018654f985e239d869062be5a396"
 dependencies = [
  "abnf-core",
  "base64",
  "chrono",
- "imap-types 2.0.0-alpha.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "log",
- "nom",
-]
-
-[[package]]
-name = "imap-codec"
-version = "2.0.0-alpha.9"
-source = "git+https://github.com/XiiTang/imap-codec?rev=8980916761a0727a10f05e4b067163a6c26ea381#8980916761a0727a10f05e4b067163a6c26ea381"
-dependencies = [
- "abnf-core",
- "base64",
- "chrono",
- "imap-types 2.0.0-alpha.7 (git+https://github.com/XiiTang/imap-codec?rev=8980916761a0727a10f05e4b067163a6c26ea381)",
+ "imap-types",
  "log",
  "nom",
 ]
@@ -434,7 +420,7 @@ version = "0.3.4"
 dependencies = [
  "async-compression",
  "bytes",
- "imap-codec 2.0.0-alpha.9 (git+https://github.com/XiiTang/imap-codec?rev=8980916761a0727a10f05e4b067163a6c26ea381)",
+ "imap-codec",
  "imap-next",
  "rand",
  "thiserror",
@@ -446,20 +432,7 @@ dependencies = [
 [[package]]
 name = "imap-types"
 version = "2.0.0-alpha.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15aa08dfdb68ab0aa77bf3de6de5217bfcae4893f33573c8625be183fca621c8"
-dependencies = [
- "base64",
- "bounded-static",
- "bounded-static-derive",
- "chrono",
- "thiserror",
-]
-
-[[package]]
-name = "imap-types"
-version = "2.0.0-alpha.7"
-source = "git+https://github.com/XiiTang/imap-codec?rev=8980916761a0727a10f05e4b067163a6c26ea381#8980916761a0727a10f05e4b067163a6c26ea381"
+source = "git+https://github.com/XiiTang/imap-codec?rev=47a85563b189018654f985e239d869062be5a396#47a85563b189018654f985e239d869062be5a396"
 dependencies = [
  "arbitrary",
  "base64",
@@ -490,7 +463,7 @@ version = "0.1.0"
 dependencies = [
  "bstr",
  "bytes",
- "imap-codec 2.0.0-alpha.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "imap-codec",
  "imap-next",
  "lazy_static",
  "tokio",

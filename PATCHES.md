@@ -6,7 +6,8 @@ Boundless drives the client state machine over its own transport: it owns the
 socket, TLS, native authentication, deadlines, resource budgets and public
 delivery, while this library keeps command literals, AUTHENTICATE and IDLE
 state. Each patch below says why Boundless needs it and which tests keep it.
-Fork tests run with `cargo test` and with
+Fork tests run with `cargo test --workspace` (the library and upstream's
+`integration-test` suite) and with
 `cargo test --no-default-features --features compress`; Boundless tests live
 under its `protocols::imap` module.
 
@@ -17,9 +18,9 @@ under its `protocols::imap` module.
 imap-codec and imap-types come from the XiiTang imap-codec fork's `boundless`
 branch, one revision for the library and for Boundless (which patches
 crates.io imap-codec to the same revision), so their types are one crate. The
-`ext_urlauth` feature is forwarded to it. Move this pin whenever Boundless moves
-its imap-codec pin. `integration-test` still names crates.io imap-codec and does
-not build against the fork.
+revision is declared once, in `[workspace.dependencies]`, and both the library
+and `integration-test` take it from there. The `ext_urlauth` feature is
+forwarded to it. Move this pin whenever Boundless moves its imap-codec pin.
 
 ### Received bytes, consumed input and NO literal rejection (dd70977)
 
@@ -35,7 +36,9 @@ not build against the fork.
 
 Fork tests (`tests/runtime_io.rs`): `exact_received_bytes_and_consumption_follow_each_message`,
 `no_rejects_a_pending_literal_without_sending_its_payload`,
-`internally_handled_literal_continuation_is_accounted_once`. Boundless:
+`internally_handled_literal_continuation_is_accounted_once`; `integration-test`:
+`login_with_literal_and_unexpected_status` (another command's status leaves the
+literal pending). Boundless:
 `append_literal_rejection_never_sends_the_rejected_message`,
 `fragmented_fetch_literal_is_preserved_with_its_tagged_completion`.
 
@@ -48,7 +51,11 @@ plaintext parser. Evidence: imap-codec's
 `handoff_requires_a_complete_message_and_retains_next_layer_bytes`; Boundless:
 `independent_zlib_compression_boundary_refusal_invalid_data_and_cancel`.
 
-### COMPRESS=DEFLATE transport (ede0c44)
+### Fork codec and COMPRESS=DEFLATE transport (ede0c44)
+
+ede0c44 moved the library onto the fork's IMAP4rev2 codec. Evidence: upstream's
+`integration-test` suite (`client`, `server` and `client_server`) passes
+against it with `cargo test --workspace`.
 
 The `compress` feature's `compress::Compressed` wraps an established stream in
 RFC 4978 raw DEFLATE after a positive tagged COMPRESS response. It creates no
