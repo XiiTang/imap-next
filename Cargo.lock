@@ -404,7 +404,7 @@ dependencies = [
 [[package]]
 name = "imap-codec"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/XiiTang/imap-codec?rev=47a85563b189018654f985e239d869062be5a396#47a85563b189018654f985e239d869062be5a396"
+source = "git+https://github.com/XiiTang/imap-codec?rev=aa8bfd5fad71a9936a5b244b7b5e8c5ec9f30718#aa8bfd5fad71a9936a5b244b7b5e8c5ec9f30718"
 dependencies = [
  "abnf-core",
  "base64",
@@ -432,7 +432,7 @@ dependencies = [
 [[package]]
 name = "imap-types"
 version = "2.0.0-alpha.7"
-source = "git+https://github.com/XiiTang/imap-codec?rev=47a85563b189018654f985e239d869062be5a396#47a85563b189018654f985e239d869062be5a396"
+source = "git+https://github.com/XiiTang/imap-codec?rev=aa8bfd5fad71a9936a5b244b7b5e8c5ec9f30718#aa8bfd5fad71a9936a5b244b7b5e8c5ec9f30718"
 dependencies = [
  "arbitrary",
  "base64",
@@ -751,9 +751,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.9"
+version = "0.103.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7df23109aa6c1567d1c575b9952556388da57401e4ace1d15f79eedad0d8f53"
+checksum = "4443b1b6d39d7c663139942cc4558262562d2c84123bb6282ef177009ca8b281"
 dependencies = [
  "ring",
  "rustls-pki-types",

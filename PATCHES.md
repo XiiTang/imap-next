@@ -74,3 +74,12 @@ literal. Fork test: `text_ending_in_literal_syntax_does_not_consume_the_next_res
 Boundless holds every response and APPEND literal whole within its size limit,
 so response literal streaming (6e6a62c) and streamed APPEND uploads (from
 c97715f) are gone.
+
+## Fixed locked certificate verification (#312)
+
+Update rustls-webpki 0.103.9 to 0.103.16 for RUSTSEC-2026-0382. Pin the
+codec fork's lockfile-only advisory refresh, aa8bfd5fad71a9936a5b244b7b5e8c5ec9f30718,
+in the manifest and lockfile together. Codec implementation and types are
+unchanged. Regression coverage: `cargo test --workspace --all-features
+--locked`, including the integration-test suite, and Boundless's complete
+IMAP library tests.
