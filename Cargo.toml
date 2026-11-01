@@ -59,4 +59,4 @@ members = [
 
 # The XiiTang imap-codec fork's boundless branch, for the library and its tests.
 [workspace.dependencies]
-imap-codec = { git = "https://github.com/XiiTang/imap-codec", rev = "aa8bfd5fad71a9936a5b244b7b5e8c5ec9f30718", default-features = false }
+imap-codec = { git = "https://github.com/XiiTang/imap-codec", rev = "91700a3ea7be32a1a5905bc65273200bb0de661c", default-features = false }

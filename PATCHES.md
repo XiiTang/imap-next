@@ -83,3 +83,13 @@ in the manifest and lockfile together. Codec implementation and types are
 unchanged. Regression coverage: `cargo test --workspace --all-features
 --locked`, including the integration-test suite, and Boundless's complete
 IMAP library tests.
+
+## Codec pin for the BINARY response origin (2026-11-01)
+
+Pin the codec fork's 91700a3ea7be32a1a5905bc65273200bb0de661c, which accepts the origin of a partial BINARY fetch
+response (`BINARY[1]<0> ~{5}`, as Dovecot sends) and adds
+`origin: Option<u64>` to `MessageDataItem::Binary`, in the manifest and
+lockfile together. imap-next does not name that variant, so its code is
+unchanged; Boundless needs the one codec revision in both crates (#432).
+Regression coverage: `cargo test --workspace --all-features --locked`,
+including the integration-test suite, and Boundless's IMAP library tests.
