@@ -404,7 +404,7 @@ dependencies = [
 [[package]]
 name = "imap-codec"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/XiiTang/imap-codec?rev=91700a3ea7be32a1a5905bc65273200bb0de661c#91700a3ea7be32a1a5905bc65273200bb0de661c"
+source = "git+https://github.com/XiiTang/imap-codec?rev=ef9945132c47989d5bb48d716309846ab7d1fb9e#ef9945132c47989d5bb48d716309846ab7d1fb9e"
 dependencies = [
  "abnf-core",
  "base64",
@@ -432,7 +432,7 @@ dependencies = [
 [[package]]
 name = "imap-types"
 version = "2.0.0-alpha.7"
-source = "git+https://github.com/XiiTang/imap-codec?rev=91700a3ea7be32a1a5905bc65273200bb0de661c#91700a3ea7be32a1a5905bc65273200bb0de661c"
+source = "git+https://github.com/XiiTang/imap-codec?rev=ef9945132c47989d5bb48d716309846ab7d1fb9e#ef9945132c47989d5bb48d716309846ab7d1fb9e"
 dependencies = [
  "arbitrary",
  "base64",

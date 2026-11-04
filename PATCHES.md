@@ -93,3 +93,18 @@ lockfile together. imap-next does not name that variant, so its code is
 unchanged; Boundless needs the one codec revision in both crates (#432).
 Regression coverage: `cargo test --workspace --all-features --locked`,
 including the integration-test suite, and Boundless's IMAP library tests.
+
+## Codec pin after retiring capability ownership (Boundless #43)
+
+Pin `ef9945132c47989d5bb48d716309846ab7d1fb9e` in the workspace manifest
+and lockfile. The codec removes its duplicate `ClientCapabilities` module;
+Boundless `src/protocols/imap/capabilities.rs` owns command admission,
+capability aliases, ENABLE state and incoming UTF-8 checks. imap-next never
+used that module and needs no production change. Boundless
+`src/protocols/imap/{wire,session}.rs` still relies on this library's protocol
+flows and its shared codec types. Keep the one codec pin for both consumers,
+including the retained rev2, URLAUTH and partial BINARY syntax.
+
+Regression coverage: `cargo test --workspace --locked` (including
+`integration-test`) and `cargo test --no-default-features --features compress
+--locked`, followed by Boundless's IMAP and SMTP tests.
